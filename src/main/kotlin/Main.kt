@@ -58,7 +58,8 @@ class FileLogger(private val loggerFolderName : String = "logs" , private val lo
     private val file = File(fileName)
 
     override fun update(message: String?) {
-       file.writeText(message+"("+LocalDateTime.now().toString()+")"+ "\n")
+        println(Thread.currentThread())
+        file.appendText(message+"("+LocalDateTime.now().toString()+")"+ "\n")
     }
 }
 
@@ -135,7 +136,7 @@ class Bank {
         }
     }
 
-    fun updateExchangeRate(power: Double = 5.0){
+    private fun updateExchangeRate(power: Double = 5.0){
         val factor =1.0 + (0.5 - Math.random())/ power
         exchangeRates.forEach(){ (key,value)->
            exchangeRates[key] = value*factor
@@ -150,7 +151,7 @@ class Bank {
         }
     }
 
-    fun startCashiers( count : Int){
+    private fun startCashiers( count : Int){
         repeat(count){
             cashiers.add(Cashier(this))
         }
@@ -158,13 +159,15 @@ class Bank {
             it.start()
         }
     }
+    private fun awaitCashiers() {
+        while (!transactionQueue.isEmpty()) {}
+    }
     fun awaitCloseCashiers(){
-        while(!transactionQueue.isEmpty()){}
+        awaitCashiers()
         cashiers.forEach { it ->
             it.stopCashier()
         }
         scheduledExecutor.shutdown()
-
     }
     fun forceCloseCashiers(){
         cashiers.forEach { it ->
@@ -200,7 +203,7 @@ class Cashier(private val bank : Bank) : Thread() {
             }
         }
     }
-    fun deposit( clientId : Int, currencyKey : String, amount : Double) {
+    private fun deposit( clientId : Int, currencyKey : String, amount : Double) {
         if ( amount<=0 || !bank.exchangeRates.contains(key = currencyKey) ) throw InvalidTransactionException()
         val client = bank.clients[clientId] ?: throw ClientNotFoundException(clientId)
         synchronized(client){
@@ -209,7 +212,7 @@ class Cashier(private val bank : Bank) : Thread() {
         }
         bank.notifyObservers("Successful deposit $amount $currencyKey, to clientId : $clientId ,  ")
     }
-    fun withdraw( clientId : Int, currencyKey : String, amount : Double) {
+    private fun withdraw( clientId : Int, currencyKey : String, amount : Double) {
         if ( amount<=0 || !bank.exchangeRates.contains(key = currencyKey) ) throw InvalidTransactionException()
         val client = bank.clients[clientId] ?: throw ClientNotFoundException(clientId)
         synchronized(client){
@@ -219,7 +222,7 @@ class Cashier(private val bank : Bank) : Thread() {
         }
         bank.notifyObservers("Successful withdraw $amount $currencyKey, from clientId : $clientId ,  ")
     }
-    fun exchangeCurrency( clientId : Int, fromCurrencyKey : String, toCurrencyKey : String, amount : Double) {
+    private fun exchangeCurrency( clientId : Int, fromCurrencyKey : String, toCurrencyKey : String, amount : Double) {
         val client = bank.clients[clientId] ?: throw ClientNotFoundException(clientId)
         if ( amount<=0 ) throw InvalidTransactionException()
         synchronized(client){
@@ -235,7 +238,7 @@ class Cashier(private val bank : Bank) : Thread() {
             bank.notifyObservers("Exchange  $amount $fromCurrencyKey,to ${amount*exchangeFactor} $fromCurrencyKey , to clientId:$clientId")
         }
     }
-    fun transferFunds( fromClientId : Int, toClientId : Int, currencyKey : String, amount : Double) {
+    private fun transferFunds( fromClientId : Int, toClientId : Int, currencyKey : String, amount : Double) {
         if ( amount<=0 || !bank.exchangeRates.contains(key = currencyKey) ) throw InvalidTransactionException()
         val sender = bank.clients[fromClientId] ?: throw ClientNotFoundException(fromClientId)
         val receiver = bank.clients[toClientId] ?: throw ClientNotFoundException(toClientId)
