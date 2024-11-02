@@ -224,9 +224,9 @@ class Cashier(private val bank : Bank) : Thread() {
         if ( amount<=0 ) throw InvalidTransactionException()
         synchronized(client){
             val fromBalance = client.clientCurrency[fromCurrencyKey] ?: throw InvalidTransactionException()
-            val toBalance = client.clientCurrency[fromCurrencyKey] ?: throw InvalidTransactionException()
+            val toBalance = client.clientCurrency[toCurrencyKey] ?: throw InvalidTransactionException()
             val fromCurrency = bank.exchangeRates[fromCurrencyKey]?:throw InvalidTransactionException()
-            val toCurrency = bank.exchangeRates[fromCurrencyKey] ?: throw InvalidTransactionException()
+            val toCurrency = bank.exchangeRates[toCurrencyKey] ?: throw InvalidTransactionException()
             val exchangeFactor = fromCurrency/toCurrency
             if(fromBalance < amount * exchangeFactor) throw InsufficientTransactionException(clientId)
             client.clientCurrency[fromCurrencyKey]=fromCurrency - amount*exchangeFactor
