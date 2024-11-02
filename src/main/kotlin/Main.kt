@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import javax.swing.text.StyledEditorKit.BoldAction
 import kotlin.math.nextDown
 
 val RUB_DEF = 130.0
@@ -17,7 +18,7 @@ enum class CashierState{
     RUNNING, STOPPED
 }
 
-class Bank {
+class Bank(start : Boolean = true) {
     private val observers = mutableListOf<Observer>()
     val clients = ConcurrentHashMap<Int,Client>()
     val exchangeRates = ConcurrentHashMap<String, Double>()
@@ -25,7 +26,10 @@ class Bank {
     val cashiers = ArrayList<Cashier>()
     val scheduledExecutor = ScheduledThreadPoolExecutor(1)
     init {
-        startCashiers(5)
+        addCashiers(5)
+        if(start){
+            startCashiers()
+        }
         initExchangeRate()
     }
 
@@ -50,7 +54,6 @@ class Bank {
             observers.add(observer)
         }
     }
-
     fun notifyObservers(message: String?) {
         observers.forEach {
             it.update(message)
@@ -104,10 +107,10 @@ class Bank {
         }
     }
 
-    private fun startCashiers( count : Int){
-        repeat(count){
-            cashiers.add(Cashier(this))
-        }
+    private fun addCashiers( count : Int){
+        cashiers.add(Cashier(this))
+    }
+    private fun startCashiers(){
         cashiers.forEach(){
             it.start()
         }
@@ -133,9 +136,7 @@ class Bank {
 }
 
 class Cashier(private val bank : Bank) : Thread() {
-    init {
-        bank.notifyObservers("Cashier started on ${currentThread()}")
-    }
+
     private var cashierState : CashierState  = CashierState.RUNNING
     override fun run() {
         while (cashierState ==CashierState.RUNNING ) {
@@ -174,7 +175,7 @@ class Cashier(private val bank : Bank) : Thread() {
             if (balance<amount ) throw  InsufficientTransactionException(clientId)
             client.clientCurrency[currencyKey] = balance-amount
         }
-        bank.notifyObservers("Successful withdraw $amount $currencyKey, from clientId : $clientId ,  ")
+        bank.notifyObservers("Successful withdraw $amount $currencyKey, from clientId : $clientId")
     }
     private fun exchangeCurrency( clientId : Int, fromCurrencyKey : String, toCurrencyKey : String, amount : Double) {
         val client = bank.clients[clientId] ?: throw ClientNotFoundException(clientId)
