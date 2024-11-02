@@ -12,57 +12,10 @@ import kotlin.math.nextDown
 val RUB_DEF = 130.0
 val USD_DEF = 1.0
 val EUR_DEF = 1.29
-class ClientFactory(private val bank:Bank){
-    fun createClient(id: Int) : Client{
-        val client = Client(id ,ConcurrentHashMap<String, Double>())
-        bank.exchangeRates.forEach{ (currency, _) ->
-            client.clientCurrency[currency]=0.0
-        }
-        return client
-    }
-}
 
 enum class CashierState{
     RUNNING, STOPPED
 }
-class Client(
-    val id: Int,
-    var clientCurrency : ConcurrentHashMap<String, Double>
-)
-
-open class BankException():Exception()
-class ClientNotFoundException(val clientId : Int) : BankException()
-class InvalidTransactionException() : BankException()
-class InsufficientTransactionException(val clientId : Int) : BankException()
-
-
-sealed class Transaction{
-    data class Deposit(val clientId : Int,val currencyKey : String, val amount : Double):Transaction()
-    data class Withdraw(val clientId : Int,val currencyKey : String, val amount : Double):Transaction()
-    data class ExchangeCurrency(val clientId : Int,val fromCurrencyKey : String,val toCurrencyKey : String, val amount : Double):Transaction()
-    data class TransferFunds(val fromClientId : Int,val toClientId : Int,val currencyKey : String, val amount : Double):Transaction()
-}
-
-interface Observer{
-    fun update(message : String?)
-}
-class Logger(private val loggerTag : String = "DefaultLog"): Observer{
-    override fun update(message: String?) {
-        println("$loggerTag :$message")
-    }
-}
-class FileLogger(private val loggerFolderName : String = "logs" , private val loggerFileName : String = "Logs",val extension : String="txt"): Observer{
-    private val fileName = "$loggerFolderName/$loggerFileName(${LocalDateTime.now().toString().replace('-','_').replace(':','_')}).$extension"
-    private val dir = File(loggerFolderName)
-    private val dirResult = dir.mkdir()
-    private val file = File(fileName)
-
-    override fun update(message: String?) {
-        println(Thread.currentThread())
-        file.appendText(message+"("+LocalDateTime.now().toString()+")"+ "\n")
-    }
-}
-
 
 class Bank {
     private val observers = mutableListOf<Observer>()
@@ -251,10 +204,21 @@ class Cashier(private val bank : Bank) : Thread() {
         }
         bank.notifyObservers("Transfer $amount $currencyKey,to clientId:$toClientId,from clientId:$fromClientId- withdraw completed")
 
-        synchronized(receiver){
-            val receiverBalance = receiver.clientCurrency[currencyKey]?: throw InvalidTransactionException()
-            receiver.clientCurrency[currencyKey] = receiverBalance - amount
+        try {
+            synchronized(receiver){
+                val receiverBalance = receiver.clientCurrency[currencyKey]?: throw InvalidTransactionException()
+                receiver.clientCurrency[currencyKey] = receiverBalance - amount
+            }
+        } catch (e:InvalidTransactionException){
+            synchronized(sender){
+                bank.notifyObservers("Failed to transfer $amount $currencyKey, to clientId : $toClientId ,from clientId : $fromClientId")
+                val senderBalance =sender.clientCurrency[currencyKey]?: throw InvalidTransactionException()
+                sender.clientCurrency[currencyKey] = senderBalance - amount
+                bank.notifyObservers("Return $amount $currencyKey, to clientId : $fromClientId successfully")
+                throw e
+            }
         }
+
         bank.notifyObservers("Successful transfer $amount $currencyKey, to clientId : $toClientId ,from clientId : $fromClientId")
     }
     fun stopCashier(){
@@ -267,9 +231,8 @@ class Cashier(private val bank : Bank) : Thread() {
 
 fun main() {
     val fileLogger = FileLogger("logs","MyLogs")
-    val logger = Logger("MyLog")
+    val logger = DefaultLogger("MyLog")
     val bank = Bank()
-    bank.addObserver(logger)
     bank.addObserver(logger,fileLogger)
     val client1 = ClientFactory(bank).createClient(1)
     val client2 = ClientFactory(bank).createClient(2)
