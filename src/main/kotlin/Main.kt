@@ -159,6 +159,7 @@ class Bank {
             it.start()
         }
     }
+
     private fun awaitCashiers() {
         while (!transactionQueue.isEmpty()) {}
     }
