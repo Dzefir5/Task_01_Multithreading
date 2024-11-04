@@ -46,7 +46,7 @@ class InsufficientTransactionException(val clientId : Int) : BankException()
   - ```addCashiers( count : Int)``` - Добавляет некоторое количество касс
   - ```awaitCashiers(timeout: Long = 0L)``` - Блокирует текущий поток ожидая окончания выполнения всех текущих транзакций,или пока не истечёт время timeout( если timeout = 0 , то будет ждать опустошения очереди транзакций)
   - ```awaitCloseCashiers(timeout: Long = 0)``` - Также блокирует поток как и ```awaitCashiers(...) ``` ,после чего закрывает все кассы
-  - ```forceCloseCashiers()``` - Блокирует текущий поток и закрывает все кассы , даже если все очередь транзакций не выполнена
+  - ```forceCloseCashiers()``` - Блокирует текущий поток и закрывает все кассы , даже если вся очередь транзакций не выполнена
 - Управление наблюдателями
   - ```addObserver(observer: Observer)```: Добавляет одного наблюдателя.
   - ```addObserver(observerCollection: Collection<Observer>```: Добавляет коллекцию наблюдателей.
@@ -88,7 +88,7 @@ fun main() {
     val client1 = ClientFactory(bank).createClient(1)
     val client2 = ClientFactory(bank).createClient(2)
     //Добавляем клиентов
-    bank.addClient(client1,client2)\
+    bank.addClient(client1,client2)
     //Делаем депозиты клиентам
     bank.addTransaction(Transaction.Deposit(1,"USD",1000.0))
     bank.addTransaction(Transaction.Deposit(2,"USD",1000.0))
