@@ -4,6 +4,7 @@ import java.time.LocalDateTime
 interface Observer{
     fun update(message : String?)
 }
+
 class DefaultLogger(private val loggerTag : String = "DefaultLog"): Observer{
     override fun update(message: String?) {
         println("$loggerTag :$message")
