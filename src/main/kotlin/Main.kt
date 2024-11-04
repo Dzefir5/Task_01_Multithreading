@@ -31,12 +31,12 @@ fun main() {
     println(client1.clientCurrency["USD"])
     bank.awaitCashiers()
     println(client1.clientCurrency["USD"])
-    repeat(25){
+    repeat(2500){
         bank.addTransaction(Transaction.TransferFunds(1,2,"USD",10.0))
         bank.addTransaction(Transaction.TransferFunds(2,1,"USD",10.0))
-        println(client1.clientCurrency["USD"])
     }
-    bank.awaitCloseCashiers()
+    bank.forceCloseCashiers()
     println(client1.clientCurrency["USD"])
+    println(client2.clientCurrency["USD"])
 
 }

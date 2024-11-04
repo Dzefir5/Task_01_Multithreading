@@ -11,7 +11,7 @@ class Cashier(private val bank : Bank) : Thread() {
     override fun run() {
         bank.notifyObservers("Cashier on ${Thread.currentThread()} started")
         while (cashierState == CashierState.RUNNING ) {
-            while (cashierState == CashierState.BLOCKED){}
+            //while (cashierState == CashierState.BLOCKED){}
             val transaction = bank.transactionQueue.poll(1000,TimeUnit.MICROSECONDS) ?: continue
             try {
                 when(transaction){

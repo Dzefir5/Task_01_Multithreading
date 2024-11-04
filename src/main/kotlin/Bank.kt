@@ -68,14 +68,12 @@ class Bank(private val start : Boolean = true) {
     }
     fun addClient(clientCollection: Collection<Client>) {
         clientCollection.forEach(){client ->
-            clients[client.id] = client
-            notifyObservers("Added client with clientId : ${client.id}")
+            addClient(client)
         }
     }
     fun addClient(vararg clientsList: Client) {
         clientsList.forEach(){client ->
-            clients[client.id] = client
-            notifyObservers("Added client with clientId : ${client.id}")
+            addClient(client)
         }
     }
 
@@ -85,12 +83,12 @@ class Bank(private val start : Boolean = true) {
     }
     fun addTransaction(transactionCollection: Collection<Transaction>) {
         transactionCollection.forEach(){transaction ->
-            transactionQueue.add(transaction)
+            addTransaction(transaction)
         }
     }
     fun addTransaction(vararg transactionList : Transaction) {
         transactionList.forEach(){transaction ->
-            transactionQueue.add(transaction)
+            addTransaction(transaction)
         }
     }
 
@@ -112,11 +110,13 @@ class Bank(private val start : Boolean = true) {
         transactionQueue.clear()
     }
 
-    private fun addCashiers( count : Int){
+
+    fun addCashiers( count : Int){
         repeat(count){
             cashiers.add(Cashier(this))
         }
     }
+
     private fun startCashiers(){
         cashiers.forEach(){
             if(it.state==NEW) it.start()
